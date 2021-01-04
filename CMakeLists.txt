@@ -3,4 +3,4 @@ project(csvparser)
 
 set(CMAKE_CXX_STANDARD 14)
 
-add_executable(csvparser main.cpp)
+add_executable(csvparser main.cpp tuple_it.h)
