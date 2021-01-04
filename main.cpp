@@ -1,81 +1,75 @@
-#include <iostream>
-#include <fstream>
-#include <tuple>
-//using namespace std;
-//namespace tup {
-    /*template <typename... Args> struct tuple;
-template <typename Head, typename... Tail> struct tuple <Head, Tail...> : tuple<Tail...> {
-    tuple(Head h, Tail... tail): tuple<Tail...>(tail...), head_(h){};
-    typedef tuple<Tail...> base_type;
-    typedef Head value_type;
-    base_type& base = static_cast<base_type&>(*this);
-    Head head_;
+#include "tuple_it.h"
+template <typename...Args> class CSVIterator {
+public:
+    std::vector<std::tuple<Args...> > &CSVData;
+    int curTuple;
+    CSVIterator(std::vector<std::tuple<Args...> > &a, int& b) : CSVData(a), curTuple(b) {}
+    void operator++() {
+        curTuple++;
+    }
+    bool operator==(CSVIterator operand) {
+        return (curTuple == operand.curTuple);
+    }
+    bool operator!=(CSVIterator operand) {
+        return (curTuple != operand.curTuple);
+    }
+    operator std::tuple<Args...> () {
+        return CSVData[curTuple];
+    }
+    std::tuple<Args...> operator *() {
+        return CSVData[curTuple];
+    }
 };
-template <> struct tuple<>{};
-*/
-    /*template<int I, typename Head, typename... Args>
-    struct getter {
-        typedef typename getter<I - 1, Args...>::return_type return_type;
-        static return_type get(std::tuple<Head, Args...> t) {
-            return getter<I - 1, Args...>::get(t);
+
+template <typename... Args> class CSVParser {
+    std::vector<std::tuple<Args...> > CSVData;
+    int curTuple = 0;
+public:
+    template <typename Char_T, typename Traits>
+    CSVParser(std::basic_istream<Char_T, Traits> &input_file, int lineCount) {
+        std::string buf;
+        for (int i = 0; i < lineCount; ++i) {
+            std::getline(input_file, buf);
         }
-    };
-
-    template<typename Head, typename ...Args>
-    struct getter <0, Head, Args...> {
-        typedef typename Head return_type;
-
-        static return_type get(std::tuple<Head, Args...> t) {
-            return std::get<0>(t);
+        const std::regex extractor("[^,]+");
+        while (getline(input_file, buf))
+        {
+            std::vector<std::string> for_tuple;
+            std::string new_word;
+            auto newstr_begin = std::sregex_iterator(buf.begin(), buf.end(), extractor);
+            for (auto i = newstr_begin; i != std::sregex_iterator(); ++i)
+            {
+                new_word = i -> str();
+                for_tuple.push_back(new_word);
+            }
+            CSVData.push_back(parser::parse<Args...>(for_tuple));
+            //std::cout << CSVData.pop_back();
         }
-    };
-
-    template<int I, typename Head, typename... Args>
-    typename getter<I, Head, Args...>::return_type
-    get(std::tuple<Head, Args...> t) {
-        return getter<I, Head, Args...>::get(t);
+        //std::cout << CSVData.size();
+        //std::cout << CSVData[1];
+    }
+    CSVIterator<Args...> begin() {
+        CSVIterator<Args...> a(CSVData, curTuple);
+        return a;
+    }
+    CSVIterator<Args...> end() {
+        int count = CSVData.size();
+        CSVIterator<Args...> a(CSVData, count);
+        return a;
+    }
+    /*std::tuple<Args...> &operator++() {
+        return CSVData[curTuple++];
     }*/
-    template <int Index, typename Callback, typename ... Args>
-    struct iterator {
-        static void next(std::tuple<Args...> &t, Callback callback, std::ostream &stream) {
-            iterator<Index-1, Callback, Args...>::next(t, callback, stream);
-            callback(Index, std::get<Index>(t), stream);
-        }
-    };
-template <typename Callback, typename ... Args>
-    struct iterator<0, Callback, Args...> {
-        static void next(std::tuple<Args...> &t, Callback callback, std::ostream &stream) {
-            callback(0, std::get<0>(t), stream);
-        }
-    };
-struct callback {
-    template<typename T> void operator()(int index, T &&t, std::ostream &stream)
-    {
-        stream << t << " ";
-    }
 };
 
-template<typename Callback, typename... Args>
-void forEach(std::tuple<Args...> &t, Callback callback, std::ostream &stream)
-{
-    int const t_size = std::tuple_size<std::tuple<Args...>>::value;
-    iterator<t_size - 1, Callback, Args...>::next(t, callback, stream);
-}
-
-template<typename _CharT, typename _Traits, typename... Args>
-    inline std::basic_ostream<_CharT, _Traits> &
-    operator<<(std::basic_ostream<_CharT, _Traits> &stream, std::tuple<Args...> &t) {
-        forEach(t, callback(), stream);
-        return stream;
-    }
 
 int main() {
-    std::tuple<int, double, char> t = std::make_tuple(5, 2.4, 'a');
-    /*std::cout << get<0>(t) << get<1>(t) << get<2>(t);*/
-    std::cout << t;
-    /*ifstream file("test.csv");
-    CSVParser<int, string> parser(file, 0 );
-    for (tuple<int, string> rs : parser) {
-        cout << rs << endl;
-    }*/
+    std::tuple<int, double, char, int> t = std::make_tuple(5, 2.4, 'a', 21);
+    //std::cout << t;
+    std::ifstream file("in.txt");
+    CSVParser<int, double> parser(file, 0);
+    for (std::tuple<int, double> rs : parser)
+    {
+        std::cout << rs << "\n";
+    }
 }
